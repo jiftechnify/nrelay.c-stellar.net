@@ -1,0 +1,14 @@
+{
+  "name": "followers_updater",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "nostr-fetch": "^0.13.1",
+    "websocket-polyfill": "^0.0.3"
+  }
+}
