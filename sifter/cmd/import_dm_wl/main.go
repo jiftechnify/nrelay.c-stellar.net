@@ -2,73 +2,57 @@ package main
 
 import (
 	"bufio"
-  "errors"
 	"log"
 	"os"
+	"path/filepath"
 
-	evsifter "github.com/jiftechnify/strfry-evsifter"
+	"github.com/jiftechnify/strfrui"
+	"github.com/jiftechnify/strfrui/sifters"
+	"github.com/nbd-wtf/go-nostr"
 )
 
-func getDestination(input *evsifter.Input) (string, error) {
-  for _, tag := range input.Event.Tags {
-    if len(tag) <= 1 || tag[0] != "p" || len(tag[1]) != 64  {
-      continue
-    }
-    return tag[1], nil
-  }
-  return "", errors.New("DM destination not found")
-}
-
-type ImportDMWithWhiteListSifer map[string]struct{}
-
-func (wl ImportDMWithWhiteListSifer) Sift(input *evsifter.Input) (*evsifter.Result, error) {
-  if input.Event.Kind != 4 {
-    return input.Reject("blocked: not DM")
-  }
-
-  // accept DMs from white-listed pubkeys
-  if _, ok := wl[input.Event.PubKey]; ok {
-    return input.Accept()
-  }
-
-  // accept DMs to white-listed pubkeys
-  dest, err := getDestination(input)
-  if err != nil {
-    return input.Reject("blocked: unknown DM destination")
-  }
-	if _, ok := wl[dest]; ok {
-		return input.Accept()
+func main() {
+	resDir := os.Getenv("RESOURCE_DIR")
+	if resDir == "" {
+		log.Fatal("RESOURCE_DIR is not set")
 	}
 
-	return input.Reject("blocked: the destination pubkey is not in the white-list")
+	wlSifter, err := readWhiteList(filepath.Join(resDir, "whitelist.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	strfrui.New(wlSifter).Run()
 }
 
-func readWhiteList(path string) (ImportDMWithWhiteListSifer, error) {
+func readWhiteList(path string) (strfrui.Sifter, error) {
 	wlFile, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer wlFile.Close()
 
-	wl := make(ImportDMWithWhiteListSifer, 0)
+	wl := make([]string, 0)
 	scanner := bufio.NewScanner(wlFile)
 	for scanner.Scan() {
 		if err := scanner.Err(); err != nil {
 			log.Print(err)
 			continue
 		}
-		wl[scanner.Text()] = struct{}{}
-	}
-	return wl, nil
-}
-
-func main() {
-	wl, err := readWhiteList("./resource/whitelist.txt")
-	if err != nil {
-		log.Fatal(err)
+		wl = append(wl, scanner.Text())
 	}
 
-	var s evsifter.Runner
-	s.SiftWith(wl)
-	s.Run()
+	s := sifters.Pipeline(
+		// allow only DMs
+		sifters.KindList([]int{4}, sifters.Allow).RejectWithMsg("blocked: not DM"),
+		sifters.OneOf(
+			// accept DMs from white-listed pubkeys
+			sifters.AuthorList(wl, sifters.Allow),
+			// accept DMs to white-listed pubkeys
+			sifters.TagsMatcher(func(t nostr.Tags) (bool, error) {
+				return t.ContainsAny("p", wl), nil
+			}, sifters.Allow),
+		).RejectWithMsg("blocked: sender nor recipient is in the whitelist"),
+	)
+	return s, nil
 }

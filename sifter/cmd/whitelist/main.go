@@ -4,45 +4,42 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"path/filepath"
 
-	evsifter "github.com/jiftechnify/strfry-evsifter"
+	"github.com/jiftechnify/strfrui"
+	"github.com/jiftechnify/strfrui/sifters"
 )
 
-type WhiteListSifer map[string]struct{}
-
-func (w WhiteListSifer) Sift(input *evsifter.Input) (*evsifter.Result, error) {
-	if _, ok := w[input.Event.PubKey]; ok {
-		return input.Accept()
+func main() {
+	resDir := os.Getenv("RESOURCE_DIR")
+	if resDir == "" {
+		log.Fatal("RESOURCE_DIR is not set")
 	}
-	return input.Reject("blocked: you can't write events")
+
+	wlSifter, err := readWhiteList(filepath.Join(resDir, "whitelist.txt"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	strfrui.New(wlSifter).Run()
 }
 
-func readWhiteList(path string) (WhiteListSifer, error) {
+func readWhiteList(path string) (strfrui.Sifter, error) {
 	wlFile, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer wlFile.Close()
 
-	wl := make(WhiteListSifer, 0)
+	wl := make([]string, 0)
 	scanner := bufio.NewScanner(wlFile)
 	for scanner.Scan() {
 		if err := scanner.Err(); err != nil {
 			log.Print(err)
 			continue
 		}
-		wl[scanner.Text()] = struct{}{}
-	}
-	return wl, nil
-}
-
-func main() {
-	wl, err := readWhiteList("./resource/whitelist.txt")
-	if err != nil {
-		log.Fatal(err)
+		wl = append(wl, scanner.Text())
 	}
 
-	var s evsifter.Runner
-	s.SiftWith(wl)
-	s.Run()
+	return sifters.AuthorList(wl, sifters.Allow), nil
 }
