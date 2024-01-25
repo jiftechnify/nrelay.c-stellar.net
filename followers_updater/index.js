@@ -4,8 +4,8 @@ import "websocket-polyfill";
 
 const relays = [
   "wss://directory.yabu.me",
+  "wss://purplepag.es",
   "wss://relay.nostr.band",
-  "wss://relayable.org",
   "wss://nrelay.c-stellar.net",
 ];
 const pubkey =
