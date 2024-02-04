@@ -1,0 +1,72 @@
+services:
+  whitelisted_relay:
+    build:
+      context: ./sifter
+      dockerfile: ./Dockerfile
+    container_name: strfry_whitelisted_relay
+    command: --config=config/relay.conf relay 
+    volumes:
+      - ./config:/app/config
+      - ./resource:${RESOURCE_DIR}
+      - ${STRFRY_DB}/whitelisted:/app/strfry-db
+      - /usr/share/zoneinfo/Asia/Tokyo:/etc/localtime:ro
+    environment:
+      - RESOURCE_DIR
+    pid: host
+    depends_on:
+      whitelisted_judgement_server:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "20"
+
+  whitelisted_router:
+    build:
+      context: ./sifter
+      dockerfile: ./Dockerfile
+    container_name: strfry_whitelisted_router
+    command: --config=config/relay.conf router config/router.conf
+    volumes:
+      - ./config:/app/config
+      - ./resource:${RESOURCE_DIR}
+      - ${STRFRY_DB}/whitelisted:/app/strfry-db
+      - /usr/share/zoneinfo/Asia/Tokyo:/etc/localtime:ro
+    environment:
+      - RESOURCE_DIR
+    pid: host
+    depends_on:
+      whitelisted_judgement_server:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "20"
+
+  whitelisted_judgement_server:
+    build:
+      context: ./judgement_server
+      dockerfile: ./Dockerfile
+    container_name: whitelisted_judgement_server
+    volumes:
+      - ./resource:${RESOURCE_DIR}
+    environment:
+      - RESOURCE_DIR
+      - TZ=Asia/Tokyo
+    healthcheck:
+      test: "wget --quiet --spider http://localhost:8080/health || exit 1"
+      start_period: 5s
+      interval: 30s
+      timeout: 3s
+      retries: 2
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+    
