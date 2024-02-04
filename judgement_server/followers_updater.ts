@@ -4,6 +4,85 @@ import { createRxForwardReq, createRxNostr, uniq } from "npm:rx-nostr@2.1.0";
 import * as log from "https://deno.land/std@0.208.0/log/mod.ts";
 import { AppContext } from "./types.ts";
 
+/**
+ * Launch followers updater
+ * - start subscription of follow list changes
+ * - synchronize follower list
+ * - schedule periodic synchronization
+ */
+export const launchFollowersUpdater = async (
+  appCtx: AppContext,
+) => {
+  log.info("launching followers updater...");
+
+  subNewFollowers(appCtx);
+  await syncFollowerList(appCtx);
+
+  // sync follower list every 6 hours
+  Deno.cron("periodic sync", { hour: { every: 6 } }, async () => {
+    await syncFollowerList(appCtx);
+  });
+};
+
+export const subNewFollowers = (
+  { kv, pubkey, relays }: AppContext,
+) => {
+  log.info(`start: subscribe to new followers`);
+
+  const rxn = createRxNostr();
+
+  rxn.createConnectionStateObservable().subscribe(({ from, state }) => {
+    log.info(`[${from}] ${state}`);
+  });
+
+  const rxReq = createRxForwardReq();
+  rxn
+    .use(rxReq, { relays })
+    .pipe(uniq())
+    .subscribe(async ({ event }) => {
+      const { pubkey: newFollower } = event;
+      await storeSingleFollower(kv, newFollower, currUnixtime());
+    });
+  rxReq.emit({ kinds: [3], "#p": [pubkey], limit: 0 });
+};
+
+let _syncInProgress = false;
+export const isSyncInProgress = () => _syncInProgress;
+
+export const syncFollowerList = async (
+  { kv, pubkey, relays }: AppContext,
+  { force } = { force: false },
+) => {
+  _syncInProgress = true;
+  try {
+    log.info("start to synchronize follower list");
+
+    const now = currUnixtime();
+
+    // skip if recently synced(within past 3 hrs)
+    const lastSycnedAt =
+      (await kv.get<number>(["last_synced_at", pubkey])).value;
+    if (
+      !force && lastSycnedAt != null &&
+      now - lastSycnedAt < 3 * 60 * 60
+    ) {
+      log.info("recently synced, skipping sync");
+      return;
+    }
+
+    const followers = await fetchAllFollowers(pubkey, relays);
+    await storeFollowers(kv, followers, now);
+    await evictFollowersRemovedMe(kv, now);
+
+    await kv.set(["last_synced_at", pubkey], now);
+    log.info("finish synchronizing follower list");
+  } catch (err) {
+    log.error(`failed to synchronize follower list: ${err}`);
+  } finally {
+    _syncInProgress = false;
+  }
+};
+
 const storeFollowers = async (
   kv: Deno.Kv,
   followers: string[],
@@ -68,30 +147,6 @@ const evictFollowersRemovedMe = async (
   }
 };
 
-let _syncInProgress = false;
-export const isSyncInProgress = () => _syncInProgress;
-
-export const syncFollowerList = async (
-  { kv, pubkey, relays }: AppContext,
-) => {
-  _syncInProgress = true;
-  try {
-    log.info("start to synchronize follower list");
-
-    const now = currUnixtime();
-    const followers = await fetchAllFollowers(pubkey, relays);
-
-    await storeFollowers(kv, followers, now);
-    await evictFollowersRemovedMe(kv, now);
-
-    log.info("finish synchronizing follower list");
-  } catch (err) {
-    log.error(`failed to synchronize follower list: ${err}`);
-  } finally {
-    _syncInProgress = false;
-  }
-};
-
 const fetchAllFollowers = async (
   pubkey: string,
   relays: string[],
@@ -110,46 +165,4 @@ const fetchAllFollowers = async (
   fetcher.shutdown();
 
   return followingMe.map((e) => e.pubkey);
-};
-
-export const subNewFollowers = (
-  { kv, pubkey, relays }: AppContext,
-) => {
-  log.info(`start: subscribe to new followers`);
-
-  const rxn = createRxNostr();
-
-  rxn.createConnectionStateObservable().subscribe(({ from, state }) => {
-    log.info(`[${from}] ${state}`);
-  });
-
-  const rxReq = createRxForwardReq();
-  rxn
-    .use(rxReq, { relays })
-    .pipe(uniq())
-    .subscribe(async ({ event }) => {
-      const { pubkey: newFollower } = event;
-      await storeSingleFollower(kv, newFollower, currUnixtime());
-    });
-  rxReq.emit({ kinds: [3], "#p": [pubkey], limit: 0 });
-};
-
-/**
- * Launch followers updater
- * - start subscription of follow list changes
- * - synchronize follower list
- * - schedule periodic synchronization
- */
-export const launchFollowersUpdater = async (
-  appCtx: AppContext,
-) => {
-  log.info("launching followers updater...");
-
-  subNewFollowers(appCtx);
-  await syncFollowerList(appCtx);
-
-  // sync follower list every 6 hours
-  Deno.cron("periodic sync", { hour: { every: 6 } }, async () => {
-    await syncFollowerList(appCtx);
-  });
 };

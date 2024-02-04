@@ -22,7 +22,7 @@ export const launchServer = (ctx: AppContext, signal: AbortSignal) => {
     if (isSyncInProgress()) {
       return c.text("sync in progress", 400);
     }
-    syncFollowerList(ctx);
+    syncFollowerList(ctx, { force: true });
     return c.text("sync triggered", 200);
   });
 
