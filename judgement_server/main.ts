@@ -39,6 +39,6 @@ if (import.meta.main) {
     ac.abort();
   });
 
-  await launchFollowersUpdater(appCtx);
+  await launchFollowersUpdater(appCtx, ac.signal);
   launchServer(appCtx, ac.signal);
 }

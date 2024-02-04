@@ -12,10 +12,11 @@ import { AppContext } from "./types.ts";
  */
 export const launchFollowersUpdater = async (
   appCtx: AppContext,
+  signal: AbortSignal,
 ) => {
   log.info("launching followers updater...");
 
-  subNewFollowers(appCtx);
+  subNewFollowers(appCtx, signal);
   await syncFollowerList(appCtx);
 
   // sync follower list every 6 hours
@@ -26,6 +27,7 @@ export const launchFollowersUpdater = async (
 
 export const subNewFollowers = (
   { kv, pubkey, relays }: AppContext,
+  signal: AbortSignal,
 ) => {
   log.info(`start: subscribe to new followers`);
 
@@ -44,6 +46,11 @@ export const subNewFollowers = (
       await storeSingleFollower(kv, newFollower, currUnixtime());
     });
   rxReq.emit({ kinds: [3], "#p": [pubkey], limit: 0 });
+
+  signal.addEventListener("abort", () => {
+    log.info("aborting new followers subscription");
+    rxn.dispose();
+  }, { once: true });
 };
 
 let _syncInProgress = false;
