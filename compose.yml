@@ -14,7 +14,7 @@ services:
       - RESOURCE_DIR
     pid: host
     depends_on:
-      whitelisted_judgement_server:
+      whitelisted_follow_check_api:
         condition: service_healthy
     restart: unless-stopped
     logging:
@@ -38,7 +38,7 @@ services:
       - RESOURCE_DIR
     pid: host
     depends_on:
-      whitelisted_judgement_server:
+      whitelisted_follow_check_api:
         condition: service_healthy
     restart: unless-stopped
     logging:
@@ -47,11 +47,13 @@ services:
         max-size: "10m"
         max-file: "20"
 
-  whitelisted_judgement_server:
+  whitelisted_follow_check_api:
     build:
-      context: ./judgement_server
+      context: ./follow_check_api
       dockerfile: ./Dockerfile
-    container_name: whitelisted_judgement_server
+    container_name: whitelisted_follow_check_api
+    ports:
+      - 127.0.0.1:8080:8080
     volumes:
       - ./resource:${RESOURCE_DIR}
     environment:

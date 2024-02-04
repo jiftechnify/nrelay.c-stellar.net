@@ -1,58 +1,37 @@
 package main
 
 import (
-	"bufio"
-	"log"
-	"os"
-	"path/filepath"
+	"c-stellar-relay-evsifter/api"
 
 	"github.com/jiftechnify/strfrui"
 	"github.com/jiftechnify/strfrui/sifters"
 	"github.com/nbd-wtf/go-nostr"
 )
 
-func main() {
-	resDir := os.Getenv("RESOURCE_DIR")
-	if resDir == "" {
-		log.Fatal("RESOURCE_DIR is not set")
-	}
-
-	wlSifter, err := readWhiteList(filepath.Join(resDir, "whitelist.txt"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	strfrui.New(wlSifter).Run()
-}
-
-func readWhiteList(path string) (strfrui.Sifter, error) {
-	wlFile, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer wlFile.Close()
-
-	wl := make([]string, 0)
-	scanner := bufio.NewScanner(wlFile)
-	for scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			log.Print(err)
-			continue
+var allowIfRecipientIsMyFollower = sifters.TagsMatcher(func(tags nostr.Tags) (bool, error) {
+	for _, t := range tags.GetAll([]string{"p"}) {
+		isFollower, err := api.IsFollower(t.Value())
+		if err != nil {
+			return false, err
 		}
-		wl = append(wl, scanner.Text())
+		if isFollower { // if any of the recipients is my follower, allow
+			return true, nil
+		}
 	}
+	return false, nil
+}, sifters.Allow)
 
-	s := sifters.Pipeline(
+func main() {
+	sifter := sifters.Pipeline(
 		// allow only DMs
 		sifters.KindList([]int{4}, sifters.Allow).RejectWithMsg("blocked: not DM"),
 		sifters.OneOf(
 			// accept DMs from white-listed pubkeys
-			sifters.AuthorList(wl, sifters.Allow),
+			sifters.AuthorMatcher(api.IsFollower, sifters.Allow),
 			// accept DMs to white-listed pubkeys
-			sifters.TagsMatcher(func(t nostr.Tags) (bool, error) {
-				return t.ContainsAny("p", wl), nil
-			}, sifters.Allow),
+			allowIfRecipientIsMyFollower,
 		).RejectWithMsg("blocked: sender nor recipient is in the whitelist"),
 	)
-	return s, nil
+
+	strfrui.New(sifter).Run()
 }
