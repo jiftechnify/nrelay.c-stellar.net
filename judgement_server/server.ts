@@ -26,6 +26,10 @@ export const launchServer = (ctx: AppContext, signal: AbortSignal) => {
     return c.text("sync triggered", 200);
   });
 
+  app.get("/health", (c) => {
+    return c.text("ok");
+  });
+
   Deno.serve({
     port: 8080,
     signal,
