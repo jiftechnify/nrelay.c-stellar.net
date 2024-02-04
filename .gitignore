@@ -6,4 +6,4 @@ node_modules
 !/resource/.gitkeep
 followers_updater/*.txt
 
-judgement_server/config.json
+follow_check_api/config.json

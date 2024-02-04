@@ -1,3 +1,4 @@
+import { logger } from "https://deno.land/x/hono@v3.12.10/middleware.ts";
 import { Hono } from "https://deno.land/x/hono@v3.12.10/mod.ts";
 import { isSyncInProgress, syncFollowerList } from "./followers_updater.ts";
 import { AppContext } from "./types.ts";
@@ -5,9 +6,11 @@ import { AppContext } from "./types.ts";
 import * as log from "https://deno.land/std@0.208.0/log/mod.ts";
 
 export const launchServer = (ctx: AppContext, signal: AbortSignal) => {
-  log.info("launching judgement server...");
+  log.info("launching follow check API server...");
 
   const app = new Hono();
+
+  app.use("*", logger());
 
   app.get("/is_follower", async (c) => {
     const pubkey = c.req.query("pubkey");
@@ -34,7 +37,7 @@ export const launchServer = (ctx: AppContext, signal: AbortSignal) => {
     port: 8080,
     signal,
     onListen: ({ hostname, port }) => {
-      log.info(`judgement server listening on ${hostname}:${port}`);
+      log.info(`follow check API server listening on ${hostname}:${port}`);
     },
   }, app.fetch);
 };
