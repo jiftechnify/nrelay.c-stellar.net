@@ -10,9 +10,8 @@ services:
       - ./resource:${RESOURCE_DIR}
       - ./strfry-db/whitelisted:/app/strfry-db
       - /usr/share/zoneinfo/Asia/Tokyo:/etc/localtime:ro
-    environment:
-      - RESOURCE_DIR
-      - FOLLOW_CHECK_API_BASE_URL
+    env_file:
+      - ./whitelisted/.env
     pid: host
     depends_on:
       whitelisted_follow_check_api:
@@ -35,9 +34,8 @@ services:
       - ./resource:${RESOURCE_DIR}
       - ./strfry-db/whitelisted:/app/strfry-db
       - /usr/share/zoneinfo/Asia/Tokyo:/etc/localtime:ro
-    environment:
-      - RESOURCE_DIR
-      - FOLLOW_CHECK_API_BASE_URL
+    env_file:
+      - ./whitelisted/.env
     pid: host
     depends_on:
       whitelisted_follow_check_api:
@@ -59,8 +57,9 @@ services:
     volumes:
       - ./resource:${RESOURCE_DIR}
     environment:
-      - RESOURCE_DIR
       - TZ=Asia/Tokyo
+    env_file:
+      - ./whitelisted/.env
     healthcheck:
       test: "wget --quiet --spider http://localhost:8080/health || exit 1"
       start_period: 10s
