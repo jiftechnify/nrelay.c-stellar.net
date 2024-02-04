@@ -4,14 +4,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
+
+type Client struct {
+	baseURL string
+}
+
+func NewClient(baseURL string) *Client {
+	return &Client{baseURL: strings.TrimSuffix(baseURL, "/")}
+}
 
 type isFollowerResp struct {
 	IsFollower bool `json:"is_follower"`
 }
 
-func IsFollower(author string) (bool, error) {
-	resp, err := http.Get(fmt.Sprintf("http://whitelisted_follow_check_api:8080/is_follower?pubkey=$%s", author))
+func (c *Client) IsFollower(author string) (bool, error) {
+	apiURL := fmt.Sprintf("%s/is_follower?pubkey=%s", c.baseURL, author)
+	resp, err := http.Get(apiURL)
 	if err != nil {
 		return false, fmt.Errorf("API server error: %w", err)
 	}
