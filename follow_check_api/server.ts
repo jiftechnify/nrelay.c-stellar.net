@@ -17,6 +17,7 @@ export const launchServer = (ctx: AppContext, signal: AbortSignal) => {
     if (pubkey === undefined) {
       return c.text("param 'pubkey' is required", 400);
     }
+    log.info(`pubkey: ${pubkey}`);
     const { value } = await ctx.kv.get(["followers", pubkey]);
     return c.json({ isFollower: value != null });
   });
