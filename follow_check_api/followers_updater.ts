@@ -69,8 +69,7 @@ export const syncFollowerList = async (
     const now = currUnixtime();
 
     // skip if recently synced(within past 3 hrs)
-    const lastSycnedAt =
-      (await kv.get<number>(["last_synced_at", pubkey])).value;
+    const lastSycnedAt = (await kv.get<number>(["last_synced_at"])).value;
     if (
       !force && lastSycnedAt != null &&
       now - lastSycnedAt < 3 * 60 * 60
@@ -83,7 +82,7 @@ export const syncFollowerList = async (
     await storeFollowers(kv, followers, now);
     await evictFollowersRemovedMe(kv, now);
 
-    await kv.set(["last_synced_at", pubkey], now);
+    await kv.set(["last_synced_at"], now);
     log.info("finish synchronizing follower list");
   } catch (err) {
     log.error(`failed to synchronize follower list: ${err}`);
