@@ -16,7 +16,7 @@ func NewClient(baseURL string) *Client {
 }
 
 type isFollowerResp struct {
-	IsFollower bool `json:"is_follower"`
+	IsFollower bool `json:"isFollower"`
 }
 
 func (c *Client) IsFollower(author string) (bool, error) {
