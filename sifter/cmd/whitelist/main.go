@@ -11,9 +11,13 @@ import (
 	"c-stellar-relay-evsifter/api"
 )
 
-var limitReactionsPerMin = ratelimit.ByUserAndKind([]ratelimit.KindQuota{
-	ratelimit.QuotaForKinds([]int{7}, ratelimit.Quota{MaxRate: ratelimit.PerMin(1), MaxBurst: 1}),
-}, ratelimit.PubKey)
+// 500 events/hr + burst of 50 events. Ephemeral events are unlimited.
+var basicRatelimit = ratelimit.
+	ByUser(ratelimit.Quota{
+		MaxRate:  ratelimit.PerHour(500),
+		MaxBurst: 50,
+	}, ratelimit.PubKey).
+	Exclude(func(i *strfrui.Input) bool { return sifters.KindsAllEphemeral(i.Event.Kind) })
 
 func main() {
 	apiBaseURL := os.Getenv("FOLLOW_CHECK_API_BASE_URL")
@@ -24,7 +28,7 @@ func main() {
 
 	sifter := sifters.Pipeline(
 		sifters.AuthorMatcher(apiCli.IsFollower, sifters.Allow),
-		limitReactionsPerMin,
+		basicRatelimit,
 	)
 
 	strfrui.New(sifter).Run()
