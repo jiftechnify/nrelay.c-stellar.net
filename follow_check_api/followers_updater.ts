@@ -1,6 +1,6 @@
-import * as log from "https://deno.land/std@0.208.0/log/mod.ts";
-import { NostrFetcher } from "npm:nostr-fetch@0.13.1";
-import { createRxForwardReq, createRxNostr, uniq } from "npm:rx-nostr@2.1.0";
+import * as log from "https://deno.land/std@0.220.1/log/mod.ts";
+import { NostrFetcher } from "npm:nostr-fetch@0.15.0";
+import { createRxForwardReq, createRxNostr, uniq } from "npm:rx-nostr@2.7.0";
 import { AppContext } from "./types.ts";
 
 /**
