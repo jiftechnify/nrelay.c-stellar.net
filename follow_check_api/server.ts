@@ -1,5 +1,5 @@
-import { logger } from "https://deno.land/x/hono@v4.1.0/middleware.ts";
-import { Hono } from "https://deno.land/x/hono@v4.1.0/mod.ts";
+import { logger } from "https://deno.land/x/hono@v4.1.3/middleware.ts";
+import { Hono } from "https://deno.land/x/hono@v4.1.3/mod.ts";
 import { isSyncInProgress, syncFollowerList } from "./followers_updater.ts";
 import { AppContext } from "./types.ts";
 
