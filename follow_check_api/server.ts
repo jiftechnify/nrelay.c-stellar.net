@@ -1,9 +1,9 @@
-import { logger } from "https://deno.land/x/hono@v4.1.3/middleware.ts";
-import { Hono } from "https://deno.land/x/hono@v4.1.3/mod.ts";
+import { logger } from "https://deno.land/x/hono@v4.1.5/middleware.ts";
+import { Hono } from "https://deno.land/x/hono@v4.1.5/mod.ts";
 import { isSyncInProgress, syncFollowerList } from "./followers_updater.ts";
 import { AppContext } from "./types.ts";
 
-import * as log from "https://deno.land/std@0.220.1/log/mod.ts";
+import * as log from "https://deno.land/std@0.221.0/log/mod.ts";
 
 export const launchServer = (ctx: AppContext, signal: AbortSignal) => {
   log.info("launching follow check API server...");

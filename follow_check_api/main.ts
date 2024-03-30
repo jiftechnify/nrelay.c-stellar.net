@@ -1,4 +1,4 @@
-import * as log from "https://deno.land/std@0.220.1/log/mod.ts";
+import * as log from "https://deno.land/std@0.221.0/log/mod.ts";
 
 import rawConfig from "./config.json" with { type: "json" };
 import { parseConfig } from "./config.ts";
