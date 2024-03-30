@@ -3,7 +3,7 @@ module c-stellar-relay-evsifter
 go 1.21
 
 require (
-	github.com/jiftechnify/strfrui v0.1.1
+	github.com/jiftechnify/strfrui v0.2.0
 	github.com/nbd-wtf/go-nostr v0.29.3
 )
 
