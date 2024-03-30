@@ -13,10 +13,7 @@ import (
 
 // 500 events/hr + burst of 50 events. Ephemeral events are unlimited.
 var basicRatelimit = ratelimit.
-	ByUser(ratelimit.Quota{
-		MaxRate:  ratelimit.PerHour(500),
-		MaxBurst: 50,
-	}, ratelimit.PubKey).
+	ByUser(ratelimit.QuotaPerHour(500).WithBurst(50), ratelimit.PubKey).
 	Exclude(func(i *strfrui.Input) bool { return sifters.KindsAllEphemeral(i.Event.Kind) })
 
 func main() {
