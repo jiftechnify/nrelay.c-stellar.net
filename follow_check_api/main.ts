@@ -8,7 +8,7 @@ import { launchServer } from "./server.ts";
 if (import.meta.main) {
   log.setup({
     handlers: {
-      console: new log.handlers.ConsoleHandler("DEBUG", {
+      console: new log.ConsoleHandler("DEBUG", {
         formatter: ({ levelName, datetime, msg }) => {
           return `${datetime.toLocaleString()} [${levelName.padEnd(8)}] ${msg}`;
         },
