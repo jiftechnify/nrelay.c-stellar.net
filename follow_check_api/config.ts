@@ -1,4 +1,4 @@
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { z } from "https://deno.land/x/zod@v3.25/mod.ts";
 
 const configSchema = z.object({
   pubkey: z.string().length(64),
