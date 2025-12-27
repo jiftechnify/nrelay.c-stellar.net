@@ -1,4 +1,4 @@
-FROM denoland/deno:debian-1.41.0
+FROM denoland/deno:debian-2.6.3
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget \
     && rm -rf /var/lib/apt/lists/*
